@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Control Documental</title>
+    <style>
+        :root {
+            --primary-color: #003366; /* Azul Institucional Oscuro */
+            --secondary-color: #005A9C; /* Azul Medio */
+            --accent-color: #27ae60; /* Verde */
+            --bg-color: #f4f6f7;
+            --text-color: #333;
+            --error-color: #c0392b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+        }
+
+        /* --- PANTALLA DE LOGIN --- */
+        #loginScreen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            text-align: center;
+            width: 350px;
+        }
+
+        .login-box h2 { color: var(--primary-color); margin-bottom: 20px; }
+        
+        .login-input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-admin { background-color: var(--primary-color); color: white; }
+        .btn-admin:hover { background-color: #002244; }
+
+        .btn-guest { background-color: #95a5a6; color: white; margin-top: 5px; }
+        .btn-guest:hover { background-color: #7f8c8d; }
+
+        .error-msg { color: var(--error-color); font-size: 14px; margin-top: 10px; display: none; }
+
+        /* --- SISTEMA PRINCIPAL --- */
+        #appContainer {
+            display: none; /* Oculto por defecto */
+            max-width: 1200px;
+            margin: 20px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+
+        h1 { color: var(--primary-color); margin: 0; font-size: 24px; }
+        
+        .user-info { font-size: 14px; color: #666; }
+        .btn-logout { 
+            background: none; border: 1px solid var(--error-color); 
+            color: var(--error-color); padding: 5px 10px; 
+            border-radius: 4px; cursor: pointer; font-size: 12px;
+        }
+        .btn-logout:hover { background: var(--error-color); color: white; }
+
+        /* Botones del Menú */
+        .action-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: translateY(-2px); }
+
+        .btn-salida { background-color: var(--secondary-color); color: white; }
+        .btn-entrada { background-color: var(--accent-color); color: white; }
+        .btn-buscar { background-color: var(--primary-color); color: white; }
+
+        /* Clases para ocultar cosas al invitado */
+        .admin-only { display: none; } 
+
+        /* Formularios */
+        .form-section {
+            display: none;
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 5px solid var(--secondary-color);
+        }
+        .form-section.active { display: block; }
+        
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .form-group { margin-bottom: 15px; }
+        
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        input { width: 100%; padding: 10px; border: 1px solid #bdc3c7; border-radius: 4px; box-sizing: border-box; }
+
+        /* Resultados y Tablas */
+        #resultadoBusqueda {
+            display: none; background: #fff3cd; border: 1px solid #ffeeba;
+            padding: 15px; margin-top: 15px; border-radius: 4px;
+        }
+
+        .history-section { margin-top: 40px; overflow-x: auto; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: var(--primary-color); color: white; }
+        tr:hover { background-color: #f1f1f1; }
+
+        .status-badge {
+            padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; display: inline-block;
+        }
+        .status-pendiente { background-color: #e74c3c; color: white; }
+        .status-completado { background-color: #27ae60; color: white; }
+
+    </style>
+</head>
+<body>
+
+<div id="loginScreen">
+    <div class="login-box">
+        <h2>Control Documental</h2>
+        <p>Seleccione su tipo de acceso</p>
+        
+        <input type="password" id="adminPassInput" class="login-input" placeholder="Contraseña de Administrador">
+        <button class="btn-login btn-admin" onclick="loginAdmin()">Ingresar como Administrador</button>
+        
+        <div id="loginError" class="error-msg">Contraseña incorrecta</div>
+
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+        
+        <button class="btn-login btn-guest" onclick="loginGuest()">Ingresar como Invitado (Solo ver)</button>
+    </div>
+</div>
+
+<div id="appContainer">
+    <header>
+        <div>
+            <h1>Gestión de Documentación</h1>
+            <span id="userRoleDisplay" class="user-info"></span>
+        </div>
+        <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
+    </header>
+
+    <div class="action-buttons">
+        <button class="btn btn-salida admin-only" onclick="mostrarFormulario('formSalida')">📤 Registrar Salida</button>
+        <button class="btn btn-entrada admin-only" onclick="mostrarFormulario('formEntrada')">📥 Registrar Entrada</button>
+        
+        <button class="btn btn-buscar" onclick="mostrarFormulario('formBuscar')">🔍 Buscar Ticket</button>
+    </div>
+
+    <div id="formSalida" class="form-section">
+        <h2>Nueva Salida de Documento</h2>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Número de Ticket / Folio:</label>
+                <input type="text" id="ticketSalida" placeholder="Ej. T-001">
+            </div>
+            <div class="form-group">
+                <label>Número de Oficio:</label>
+                <input type="text" id="oficioSalida" placeholder="Ej. OFI-2023/505">
+            </div>
+            <div class="form-group">
+                <label>Nombre del Responsable:</label>
+                <input type="text" id="responsableSalida" placeholder="Quien recibe o tramita">
+            </div>
+            <div class="form-group">
+                <label>Unidad Ejecutora del Gasto:</label>
+                <input type="text" id="unidadSalida" placeholder="Ej. Dirección General...">
+            </div>
+        </div>
+        <button class="btn btn-salida" onclick="guardarSalida()" style="width: 100%; margin-top: 10px;">Guardar Registro</button>
+    </div>
+
+    <div id="formEntrada" class="form-section">
+        <h2>Registrar Regreso de Documento</h2>
+        <div class="form-group">
+            <label>Ingrese Número de Ticket para cerrar el trámite:</label>
+            <input type="text" id="ticketEntrada" placeholder="Buscar por Ticket...">
+        </div>
+        <button class="btn btn-entrada" onclick="guardarEntrada()">Registrar Entrada</button>
+    </div>
+
+    <div id="formBuscar" class="form-section">
+        <h2>Consultar Estado</h2>
+        <div class="form-group">
+            <label>Escriba el Número de Ticket:</label>
+            <input type="text" id="ticketBuscar" placeholder="Ticket a consultar">
+        </div>
+        <button class="btn btn-buscar" onclick="buscarTicket()">Desplegar Información</button>
+
+        <div id="resultadoBusqueda">
+            <p><strong>Ticket:</strong> <span id="resTicket"></span></p>
+            <p><strong>Estado:</strong> <span id="resEstado"></span></p>
+            <hr>
+            <p><strong>Oficio:</strong> <span id="resOficio"></span></p>
+            <p><strong>Responsable:</strong> <span id="resResponsable"></span></p>
+            <p><strong>Unidad Ejecutora:</strong> <span id="resUnidad"></span></p>
+            <hr>
+            <p><strong>Fecha Salida:</strong> <span id="resSalida"></span></p>
+            <p><strong>Fecha Regreso:</strong> <span id="resRegreso"></span></p>
+        </div>
+    </div>
+
+    <div class="history-section">
+        <h2>Historial de Registros</h2>
+        <table id="tablaRegistros">
+            <thead>
+                <tr>
+                    <th>Ticket</th>
+                    <th>Oficio</th>
+                    <th>Responsable</th>
+                    <th>Unidad Ejecutora</th>
+                    <th>Fecha Salida</th>
+                    <th>Fecha Regreso</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // --- CONFIGURACIÓN ---
+    const PASSWORD_ADMIN = "1234"; // <--- CAMBIA ESTA CONTRASEÑA AQUÍ
+    let registros = JSON.parse(localStorage.getItem('docRecords_v3')) || [];
+    let currentUserRole = null; // 'admin' o 'guest'
+
+    // --- LÓGICA DE LOGIN ---
+    
+    function loginAdmin() {
+        const inputPass = document.getElementById('adminPassInput').value;
+        if (inputPass === PASSWORD_ADMIN) {
+            iniciarSesion('admin');
+        } else {
+            const errorMsg = document.getElementById('loginError');
+            errorMsg.style.display = 'block';
+            setTimeout(() => errorMsg.style.display = 'none', 3000);
+        }
+    }
+
+    function loginGuest() {
+        iniciarSesion('guest');
+    }
+
+    function iniciarSesion(rol) {
+        currentUserRole = rol;
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appContainer').style.display = 'block';
+        
+        // Configurar UI según el rol
+        const elementosAdmin = document.querySelectorAll('.admin-only');
+        const infoUser = document.getElementById('userRoleDisplay');
+        
+        if (rol === 'admin') {
+            infoUser.innerHTML = "Logueado como: <strong>Administrador</strong>";
+            elementosAdmin.forEach(el => el.style.display = 'inline-block');
+        } else {
+            infoUser.innerHTML = "Logueado como: <strong>Invitado</strong> (Solo Lectura)";
+            elementosAdmin.forEach(el => el.style.display = 'none');
+        }
+        
+        renderizarTabla();
+    }
+
+    function logout() {
+        currentUserRole = null;
+        document.getElementById('adminPassInput').value = '';
+        document.getElementById('appContainer').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'flex';
+        // Ocultar formularios abiertos
+        document.querySelectorAll('.form-section').forEach(f => f.classList.remove('active'));
+    }
+
+    // --- LÓGICA DEL SISTEMA ---
+
+    function mostrarFormulario(formId) {
+        document.querySelectorAll('.form-section').forEach(f => f.classList.remove('active'));
+        document.getElementById(formId).classList.add('active');
+        document.querySelectorAll('input').forEach(i => {
+            if(i.id !== 'adminPassInput') i.value = ''; 
+        });
+        document.getElementById('resultadoBusqueda').style.display = 'none';
+    }
+
+    function guardarSalida() {
+        if(currentUserRole !== 'admin') return; // Seguridad extra
+
+        const ticket = document.getElementById('ticketSalida').value.trim();
+        const oficio = document.getElementById('oficioSalida').value.trim();
+        const responsable = document.getElementById('responsableSalida').value.trim();
+        const unidad = document.getElementById('unidadSalida').value.trim();
+
+        if (!ticket || !oficio || !responsable || !unidad) {
+            alert("Por favor complete TODOS los campos.");
+            return;
+        }
+
+        if (registros.find(r => r.ticket === ticket)) {
+            alert("¡Error! Ese número de Ticket ya existe.");
+            return;
+        }
+
+        const nuevoRegistro = {
+            ticket: ticket,
+            oficio: oficio,
+            responsable: responsable,
+            unidad: unidad,
+            fechaSalida: new Date().toLocaleString(),
+            fechaRegreso: "---",
+            estado: "Pendiente"
+        };
+
+        registros.push(nuevoRegistro);
+        actualizarBD();
+        alert("Salida registrada correctamente.");
+        mostrarFormulario('');
+    }
+
+    function guardarEntrada() {
+        if(currentUserRole !== 'admin') return;
+
+        const ticketBusqueda = document.getElementById('ticketEntrada').value.trim();
+        const indice = registros.findIndex(r => r.ticket === ticketBusqueda);
+
+        if (indice === -1) {
+            alert("Ticket no encontrado.");
+            return;
+        }
+        if (registros[indice].estado === "Completado") {
+            alert("Este ticket ya fue cerrado.");
+            return;
+        }
+
+        registros[indice].fechaRegreso = new Date().toLocaleString();
+        registros[indice].estado = "Completado";
+
+        actualizarBD();
+        alert(`Entrada registrada para Ticket: ${registros[indice].ticket}`);
+        mostrarFormulario('');
+    }
+
+    function buscarTicket() {
+        const ticket = document.getElementById('ticketBuscar').value.trim();
+        const r = registros.find(reg => reg.ticket === ticket);
+        const panel = document.getElementById('resultadoBusqueda');
+
+        if (r) {
+            document.getElementById('resTicket').innerText = r.ticket;
+            document.getElementById('resOficio').innerText = r.oficio;
+            document.getElementById('resResponsable').innerText = r.responsable;
+            document.getElementById('resUnidad').innerText = r.unidad;
+            document.getElementById('resSalida').innerText = r.fechaSalida;
+            document.getElementById('resRegreso').innerText = r.fechaRegreso;
+            
+            const estadoSpan = document.getElementById('resEstado');
+            estadoSpan.innerText = r.estado;
+            estadoSpan.className = r.estado === 'Pendiente' ? 'status-badge status-pendiente' : 'status-badge status-completado';
+            
+            panel.style.display = 'block';
+        } else {
+            alert("Ticket no encontrado.");
+            panel.style.display = 'none';
+        }
+    }
+
+    function actualizarBD() {
+        localStorage.setItem('docRecords_v3', JSON.stringify(registros));
+        renderizarTabla();
+    }
+
+    function renderizarTabla() {
+        const tbody = document.querySelector('#tablaRegistros tbody');
+        tbody.innerHTML = '';
+
+        registros.slice().reverse().forEach(r => {
+            const row = `
+                <tr>
+                    <td><strong>${r.ticket}</strong></td>
+                    <td>${r.oficio}</td>
+                    <td>${r.responsable}</td>
+                    <td>${r.unidad}</td>
+                    <td>${r.fechaSalida}</td>
+                    <td>${r.fechaRegreso}</td>
+                    <td><span class="status-badge ${r.estado === 'Pendiente' ? 'status-pendiente' : 'status-completado'}">${r.estado}</span></td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+    }
+</script>
+
+</body>
+</html>
